@@ -56,7 +56,19 @@ const actifs = repos.filter((r) => !r.archived).length;
     list-style: none;
     margin: 0;
     padding: 0.4rem 0 0.4rem 0;
-    border-left: 4px solid var(--violet);
+    position: relative;
   }
+  .schema__departs::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--violet);
+    box-shadow: 0 0 14px rgb(179 140 255 / 0.45);
+    transform-origin: top;
+    animation: jdb 0.5s cubic-bezier(.3,.7,.2,1) both;
+  }
+  @keyframes jdb { from { transform: scaleY(0); } }
+  .schema__departs { padding-left: 4px; }
   .vide { margin-top: 2rem; color: var(--brume); }
 </style>

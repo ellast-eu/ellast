@@ -1,0 +1,170 @@
+---
+// Fond animé : un maillage de lignes et de postes, parcouru par des impulsions.
+// Purement décoratif (aria-hidden), en pause quand l'onglet est caché,
+// et figé si la personne a demandé de réduire les animations.
+---
+
+<canvas class="reseau" id="reseau" aria-hidden="true"></canvas>
+
+<script>
+  const canvas = document.getElementById('reseau') as HTMLCanvasElement | null;
+  const ctx = canvas?.getContext('2d');
+
+  if (canvas && ctx) {
+    const css = getComputedStyle(document.documentElement);
+    const lire = (v: string, d: string) => css.getPropertyValue(v).trim() || d;
+    const C = {
+      ligne: lire('--ligne', '#1d3a3b'),
+      petrole: lire('--petrole', '#2fb3a3'),
+      ambre: lire('--ambre', '#ffb547'),
+      violet: lire('--violet', '#b38cff'),
+    };
+    const reduit = matchMedia('(prefers-reduced-motion: reduce)');
+
+    type Noeud = { x: number; y: number; voisins: number[]; flash: number };
+    type Impulsion = { de: number; vers: number; t: number; v: number; couleur: string };
+
+    let W = 0, H = 0, dpr = 1, pas = 96;
+    let noeuds: Noeud[] = [];
+    let impulsions: Impulsion[] = [];
+    let raf = 0;
+
+    // Générateur pseudo-aléatoire stable : le maillage reste le même d'une page à l'autre
+    let graine = 7;
+    const alea = () => ((graine = (graine * 16807) % 2147483647) - 1) / 2147483646;
+
+    const construire = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      pas = W < 600 ? 72 : 96;
+      graine = 7;
+      const cols = Math.ceil(W / pas) + 1, rangs = Math.ceil(H / pas) + 1;
+      noeuds = [];
+      for (let r = 0; r < rangs; r++) {
+        for (let c = 0; c < cols; c++) {
+          // léger décalage pour éviter la grille parfaite
+          noeuds.push({
+            x: c * pas + (alea() - 0.5) * pas * 0.35,
+            y: r * pas + (alea() - 0.5) * pas * 0.35,
+            voisins: [], flash: 0,
+          });
+        }
+      }
+      const id = (c: number, r: number) => r * cols + c;
+      for (let r = 0; r < rangs; r++) {
+        for (let c = 0; c < cols; c++) {
+          // On ne garde qu'une partie des tronçons : un réseau, pas un quadrillage
+          if (c + 1 < cols && alea() < 0.55) lier(id(c, r), id(c + 1, r));
+          if (r + 1 < rangs && alea() < 0.45) lier(id(c, r), id(c, r + 1));
+        }
+      }
+      const n = Math.round((W * H) / 52000);
+      impulsions = Array.from({ length: n }, () => nouvelle());
+    };
+
+    const lier = (a: number, b: number) => { noeuds[a].voisins.push(b); noeuds[b].voisins.push(a); };
+
+    const nouvelle = (): Impulsion => {
+      let de = Math.floor(Math.random() * noeuds.length);
+      for (let k = 0; k < 20 && !noeuds[de].voisins.length; k++) de = Math.floor(Math.random() * noeuds.length);
+      const v = noeuds[de].voisins;
+      const r = Math.random();
+      return {
+        de,
+        vers: v.length ? v[Math.floor(Math.random() * v.length)] : de,
+        t: Math.random(),
+        v: 0.006 + Math.random() * 0.012,
+        couleur: r < 0.12 ? C.ambre : r < 0.22 ? C.violet : C.petrole,
+      };
+    };
+
+    const dessinerMaillage = () => {
+      ctx.clearRect(0, 0, W, H);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = C.ligne;
+      ctx.beginPath();
+      noeuds.forEach((n, i) => n.voisins.forEach((j) => {
+        if (j > i) { ctx.moveTo(n.x, n.y); ctx.lineTo(noeuds[j].x, noeuds[j].y); }
+      }));
+      ctx.stroke();
+      ctx.fillStyle = C.ligne;
+      for (const n of noeuds) if (n.voisins.length > 2) ctx.fillRect(n.x - 2, n.y - 2, 4, 4);
+    };
+
+    const image = () => {
+      dessinerMaillage();
+      ctx.globalCompositeOperation = 'lighter';
+      for (const p of impulsions) {
+        p.t += p.v;
+        if (p.t >= 1) {
+          const arrivee = noeuds[p.vers];
+          arrivee.flash = 1;
+          const suite = arrivee.voisins.filter((j) => j !== p.de);
+          const choix = suite.length ? suite : arrivee.voisins;
+          p.de = p.vers;
+          p.vers = choix.length ? choix[Math.floor(Math.random() * choix.length)] : p.vers;
+          p.t = 0;
+        }
+        const a = noeuds[p.de], b = noeuds[p.vers];
+        const x = a.x + (b.x - a.x) * p.t, y = a.y + (b.y - a.y) * p.t;
+        const tq = Math.max(0, p.t - 0.35);
+        const xq = a.x + (b.x - a.x) * tq, yq = a.y + (b.y - a.y) * tq;
+        const g = ctx.createLinearGradient(xq, yq, x, y);
+        g.addColorStop(0, 'transparent');
+        g.addColorStop(1, p.couleur);
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(xq, yq); ctx.lineTo(x, y); ctx.stroke();
+        ctx.fillStyle = p.couleur;
+        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+      // Les postes atteints s'allument un instant
+      for (const n of noeuds) {
+        if (n.flash > 0.02) {
+          ctx.globalAlpha = n.flash * 0.6;
+          ctx.fillStyle = C.petrole;
+          ctx.fillRect(n.x - 3, n.y - 3, 6, 6);
+          n.flash *= 0.92;
+        }
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+      raf = requestAnimationFrame(image);
+    };
+
+    const demarrer = () => {
+      cancelAnimationFrame(raf);
+      if (reduit.matches || document.hidden) { dessinerMaillage(); return; }
+      raf = requestAnimationFrame(image);
+    };
+
+    let minuterie = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(minuterie);
+      minuterie = window.setTimeout(() => { construire(); demarrer(); }, 150);
+    });
+    document.addEventListener('visibilitychange', demarrer);
+    reduit.addEventListener('change', demarrer);
+
+    construire();
+    demarrer();
+  }
+</script>
+
+<style>
+  .reseau {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.9;
+    /* Le maillage s'efface vers le centre pour ne pas gêner la lecture */
+    mask-image: radial-gradient(110% 85% at 50% 45%, rgb(0 0 0 / 0.25) 0%, #000 80%);
+    animation: reseau-in 1.2s ease-out both;
+  }
+  @keyframes reseau-in { from { opacity: 0; } }
+</style>

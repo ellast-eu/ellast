@@ -2,19 +2,27 @@
 @import '@fontsource-variable/instrument-sans';
 
 /*
-  Palette « poste de nuit » : violet de veille sur fond aubergine,
-  ambre des pancartes « danger haute tension » pour ce qui est sous tension.
+  Palette « poste de nuit » : un fond vert pétrole, complémentaire du violet
+  qui reste réservé au terminal et aux liens ; l'ambre des pancartes
+  « danger haute tension » marque ce qui est sous tension.
 */
 :root {
-  --nuit: #150d20;
-  --nuit-2: #1e142d;
-  --ligne: #3a2b52;
-  --encre: #ece6f5;
-  --brume: #a397b8;
+  --nuit: #061617;      /* fond, vert pétrole très profond */
+  --nuit-2: #0c2223;    /* surfaces (code, étiquettes) */
+  --ligne: #1d3a3b;     /* traits et bordures */
+  --encre: #e8f1ef;
+  --brume: #8eaca8;     /* texte secondaire, gris-vert */
+  --petrole: #2fb3a3;  /* impulsions du réseau en fond */
   --violet: #b38cff;
   --violet-fort: #8f5cff;
   --ambre: #ffb547;
   --rouge: #ff6b8a;
+
+  /* Le terminal garde son propre monde violet */
+  --t-fond: #1b0f30;
+  --t-fond-2: #2a1650;
+  --t-bord: #5a3a92;
+  --t-brume: #ad9dcc;
 
   --mono: 'Martian Mono Variable', ui-monospace, monospace;
   --sans: 'Instrument Sans Variable', system-ui, sans-serif;
@@ -32,7 +40,11 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: var(--nuit);
+  background:
+    radial-gradient(90% 60% at 15% -10%, #0f3433 0%, transparent 60%),
+    radial-gradient(70% 50% at 100% 100%, #0b2a2a 0%, transparent 70%),
+    var(--nuit);
+  background-attachment: fixed;
   color: var(--encre);
   font: 400 1.0625rem/1.6 var(--sans);
   min-height: 100dvh;
@@ -97,8 +109,16 @@ pre {
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
+/* Transitions entre pages : natives du navigateur, sans JavaScript */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: 0.18s ease-in both sortie; }
+::view-transition-new(root) { animation: 0.32s cubic-bezier(.2,.7,.2,1) both entree; }
+@keyframes sortie { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes entree { from { opacity: 0; transform: translateY(10px); } }
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  @view-transition { navigation: none; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
 
 /* Tableaux (articles) */
@@ -108,7 +128,7 @@ th { color: var(--violet); font-weight: 600; }
 
 /* Coloration syntaxique Prism, thème maison */
 pre[class*='language-'] { background: var(--nuit-2); color: var(--encre); }
-.token.comment, .token.prolog { color: #7d6f95; font-style: italic; }
+.token.comment, .token.prolog { color: #6f8f8b; font-style: italic; }
 .token.string, .token.attr-value { color: var(--ambre); }
 .token.keyword, .token.builtin, .token.function { color: var(--violet); }
 .token.number, .token.boolean, .token.constant { color: #ff9ec2; }

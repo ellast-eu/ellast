@@ -47,15 +47,18 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
         <span class="i-user">stella@ellast</span><span class="i-sep">:</span><span class="i-dir" id="term-dir">~</span><span class="i-dollar">$</span>
         <span class="sr-only">Commande</span>
       </label>
-      <input
-        id="term-saisie"
-        class="terminal__saisie"
-        type="text"
-        spellcheck="false"
-        autocapitalize="off"
-        enterkeyhint="send"
-        aria-describedby="term-aide"
-      />
+      <span class="terminal__champ">
+        <input
+          id="term-saisie"
+          class="terminal__saisie"
+          type="text"
+          spellcheck="false"
+          autocapitalize="off"
+          enterkeyhint="send"
+          aria-describedby="term-aide"
+        />
+        <span class="terminal__curseur" id="term-curseur" aria-hidden="true"></span>
+      </span>
     </form>
   </div>
   <p class="terminal__aide" id="term-aide">
@@ -86,9 +89,12 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
 
   // --- Rendu : uniquement via textContent / createElement, jamais innerHTML ---
   type Seg = string | { t: string; c?: string; href?: string };
+  // Chaque ligne de sortie arrive un peu après la précédente, comme un affichage qui défile
+  let rang = 0;
   const ligne = (segs: Seg[] | string, cls = '') => {
     const el = document.createElement('div');
-    el.className = 'l ' + cls;
+    el.className = 'l l--sortie ' + cls;
+    el.style.setProperty('--i', String(Math.min(rang++, 30)));
     for (const s of typeof segs === 'string' ? [segs] : segs) {
       if (typeof s === 'string') { el.append(s); continue; }
       const n = document.createElement(s.href ? 'a' : 'span');
@@ -306,6 +312,7 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
 
   const executer = (brut: string) => {
     const texte = brut.trim();
+    rang = 0;
     ligne([
       { t: 'stella@ellast', c: 'i-user' }, { t: ':', c: 'i-sep' },
       { t: cwd === '~' ? '~' : '~/' + cwd, c: 'i-dir' }, { t: '$ ', c: 'i-dollar' }, texte,
@@ -323,6 +330,7 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
     e.preventDefault();
     executer(saisie.value);
     saisie.value = '';
+    placerCurseur();
     defile();
   });
 
@@ -359,6 +367,20 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
     }
   });
 
+  // Curseur en bloc : placé à la position du caret (police à chasse fixe, donc 1ch par caractère)
+  const curseur = document.getElementById('term-curseur')!;
+  const placerCurseur = () => {
+    const pos = saisie.selectionStart ?? saisie.value.length;
+    const largeur = curseur.getBoundingClientRect().width || 8;
+    curseur.style.setProperty('--pos', String(pos - saisie.scrollLeft / largeur));
+    curseur.classList.remove('terminal__curseur--frappe');
+    void curseur.offsetWidth; // relance l'animation : le curseur reste plein pendant la frappe
+    curseur.classList.add('terminal__curseur--frappe');
+  };
+  ['input', 'keyup', 'click', 'select', 'focus'].forEach((ev) => saisie.addEventListener(ev, placerCurseur));
+  saisie.addEventListener('focus', () => curseur.classList.add('terminal__curseur--actif'));
+  saisie.addEventListener('blur', () => curseur.classList.remove('terminal__curseur--actif'));
+
   // Un clic dans l'écran redonne le focus à la saisie (sauf sélection de texte ou lien)
   ecran.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('a')) return;
@@ -388,16 +410,19 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
     if (reduit || dejaVu) {
       for (const [, t] of sequence) ligne([{ t: '[  OK  ] ', c: 'c-ambre' }, t]);
     } else {
+      await new Promise((r) => setTimeout(r, 650)); // le temps que l'écran s'allume
       let interrompu = false;
       const stop = () => { interrompu = true; };
       window.addEventListener('keydown', stop, { once: true });
       for (const [, t] of sequence) {
+        rang = 0;
         ligne([{ t: '[  OK  ] ', c: 'c-ambre' }, t], 'l--boot');
         if (!interrompu) await new Promise((r) => setTimeout(r, 260));
       }
       window.removeEventListener('keydown', stop);
       try { sessionStorage.setItem('ellast-boot', '1'); } catch { /* stockage indisponible */ }
     }
+    rang = 0;
     accueil();
     defile();
     // Pas de focus automatique sur mobile : le clavier virtuel masquerait l'écran
@@ -409,28 +434,65 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
 
 <style is:global>
   .terminal {
+    /* Le terminal a sa propre palette violette : on redéfinit les teintes neutres */
+    --brume: var(--t-brume);
+    --ligne: var(--t-bord);
     --t-pad: clamp(14px, 2.5vw, 26px);
-    position: relative; /* contient le libellé sr-only de la saisie */
+    position: relative; /* contient le libellé sr-only et les effets d'écran */
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    border: 1px solid var(--ligne);
-    border-radius: 10px;
+    border: 1px solid var(--t-bord);
+    border-radius: 12px;
     background:
-      radial-gradient(120% 80% at 80% 0%, #2a1a45 0%, transparent 60%),
-      var(--nuit-2);
+      radial-gradient(120% 90% at 85% -10%, var(--t-fond-2) 0%, transparent 60%),
+      radial-gradient(80% 60% at 0% 110%, #241046 0%, transparent 70%),
+      var(--t-fond);
+    box-shadow:
+      0 0 0 1px rgb(179 140 255 / 0.08),
+      0 30px 90px -30px rgb(143 92 255 / 0.55),
+      inset 0 1px 0 rgb(255 255 255 / 0.04);
     overflow: hidden;
     font-family: var(--mono);
     font-size: clamp(0.74rem, 0.68rem + 0.3vw, 0.86rem);
     line-height: 1.65;
+    animation: allumage 0.75s cubic-bezier(.2,.8,.2,1) both;
   }
+  /* Mise sous tension façon écran cathodique : un trait, puis l'image */
+  @keyframes allumage {
+    0%   { clip-path: inset(49.6% 50% 49.6% 50% round 12px); filter: brightness(2.2); }
+    40%  { clip-path: inset(49.6% 0 49.6% 0 round 12px); filter: brightness(2.2); }
+    100% { clip-path: inset(0 0 0 0 round 12px); filter: none; }
+  }
+  /* Lignes de balayage fixes, et une bande lumineuse qui descend lentement */
+  .terminal::before,
+  .terminal::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .terminal::before {
+    background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.14) 2px 3px);
+    mix-blend-mode: multiply;
+  }
+  .terminal::after {
+    background: linear-gradient(to bottom, transparent, rgb(179 140 255 / 0.06) 50%, transparent);
+    height: 30%;
+    animation: balayage 7s linear infinite;
+  }
+  @keyframes balayage { from { transform: translateY(-100%); } to { transform: translateY(440%); } }
+
   .terminal__barre {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.55rem var(--t-pad);
-    border-bottom: 1px solid var(--ligne);
+    border-bottom: 1px solid var(--t-bord);
+    background: rgb(0 0 0 / 0.18);
     color: var(--brume);
     font-size: 0.78em;
   }
@@ -439,20 +501,36 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--ambre);
     box-shadow: 0 0 8px var(--ambre);
+    animation: respire 2.4s ease-in-out infinite;
   }
+  @keyframes respire { 50% { opacity: 0.45; box-shadow: 0 0 2px var(--ambre); } }
+
   .terminal__ecran {
+    position: relative;
+    z-index: 1;
     flex: 1;
     overflow-y: auto;
     padding: var(--t-pad);
     cursor: text;
-    scrollbar-color: var(--ligne) transparent;
+    scrollbar-color: var(--t-bord) transparent;
+    text-shadow: 0 0 6px rgb(179 140 255 / 0.28);
   }
   .terminal__journal .l { white-space: pre-wrap; word-break: break-word; min-height: 1.65em; }
-  .terminal__journal a { color: var(--violet); }
-  .terminal__journal a:hover { color: var(--encre); }
+  .terminal__journal a { color: var(--violet); text-decoration-color: rgb(179 140 255 / 0.5); }
+  .terminal__journal a:hover { color: var(--encre); text-decoration-color: currentColor; }
   .l--cmd { margin-top: 0.35em; }
-  .l--boot { animation: allume 0.18s steps(2) both; }
-  @keyframes allume { from { opacity: 0; } to { opacity: 1; } }
+  .l--sortie {
+    animation: ligne-in 0.22s ease-out both;
+    animation-delay: calc(var(--i, 0) * 16ms);
+  }
+  @keyframes ligne-in { from { opacity: 0; transform: translateX(-6px); } }
+  .l--boot { animation: allume 0.3s steps(3) both; }
+  @keyframes allume { 0% { opacity: 0; } 50% { opacity: 1; color: #fff; } 100% { opacity: 1; } }
+  .terminal__journal .l.c-rouge { animation: secousse 0.32s ease-out both; }
+  @keyframes secousse {
+    20% { transform: translateX(-3px); } 40% { transform: translateX(3px); }
+    60% { transform: translateX(-2px); } 80% { transform: translateX(1px); }
+  }
 
   .terminal__ligne { display: flex; align-items: baseline; gap: 0.6ch; margin-top: 0.35em; }
   .terminal__invite { white-space: nowrap; }
@@ -460,6 +538,7 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
   .i-sep { color: var(--brume); }
   .i-dir { color: var(--encre); }
   .i-dollar { color: var(--ambre); margin-left: 0.15ch; }
+  .terminal__champ { position: relative; flex: 1; display: flex; min-width: 0; }
   .terminal__saisie {
     flex: 1;
     min-width: 4ch;
@@ -467,15 +546,41 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
     border: 0;
     color: var(--encre);
     font: inherit;
-    caret-color: var(--ambre);
+    text-shadow: inherit;
+    caret-color: transparent;
     padding: 0;
   }
   .terminal__saisie:focus { outline: none; }
+  /* Curseur en bloc ambre, qui clignote au repos et reste plein pendant la frappe */
+  .terminal__curseur {
+    position: absolute;
+    left: calc(var(--pos, 0) * 1ch);
+    top: 0.18em;
+    width: 1ch;
+    height: 1.25em;
+    background: var(--ambre);
+    box-shadow: 0 0 10px rgb(255 181 71 / 0.6);
+    mix-blend-mode: screen;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .terminal__curseur--actif { animation: clignote 1.05s steps(1) infinite; }
+  .terminal__curseur--actif.terminal__curseur--frappe { animation: clignote-b 1.05s steps(1) infinite; }
+  @keyframes clignote { 0%, 55% { opacity: 0.9; } 56%, 100% { opacity: 0; } }
+  @keyframes clignote-b { 0%, 55% { opacity: 0.9; } 56%, 100% { opacity: 0; } }
   .terminal__ligne:focus-within .i-dollar { text-shadow: 0 0 10px var(--ambre); }
+  /* iOS zoome sur les champs de moins de 16px : on agrandit la saisie sur écran tactile */
+  @media (pointer: coarse) {
+    .terminal__saisie, .terminal__curseur { font-size: 16px; }
+  }
+
   .terminal__aide {
+    position: relative;
+    z-index: 1;
     margin: 0;
     padding: 0.6rem var(--t-pad);
-    border-top: 1px solid var(--ligne);
+    border-top: 1px solid var(--t-bord);
+    background: rgb(0 0 0 / 0.18);
     color: var(--brume);
     font-size: 0.78em;
   }
@@ -487,4 +592,8 @@ const json = JSON.stringify(data).replace(/</g, '\\u003c');
   .c-rouge { color: var(--rouge); }
   .c-encre { color: var(--encre); }
   .fort { font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .terminal::after { display: none; }
+  }
 </style>

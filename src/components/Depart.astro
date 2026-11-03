@@ -109,4 +109,56 @@ const ferme = !repo.archived;
     border-radius: 999px;
     padding: 0.05rem 0.6rem;
   }
+  /* Mise sous tension du schéma : le jeu de barres se trace, puis chaque départ
+     s'enclenche à son tour (délai calculé depuis sa position dans la liste). */
+  .depart:nth-child(1) { --n: 0; }
+  .depart:nth-child(2) { --n: 1; }
+  .depart:nth-child(3) { --n: 2; }
+  .depart:nth-child(4) { --n: 3; }
+  .depart:nth-child(5) { --n: 4; }
+  .depart:nth-child(6) { --n: 5; }
+  .depart:nth-child(7) { --n: 6; }
+  .depart:nth-child(8) { --n: 7; }
+  .depart:nth-child(9) { --n: 8; }
+  .depart:nth-child(10) { --n: 9; }
+  .depart:nth-child(11) { --n: 10; }
+  .depart:nth-child(12) { --n: 11; }
+  .depart:nth-child(13) { --n: 12; }
+  .depart:nth-child(14) { --n: 13; }
+  .depart:nth-child(15) { --n: 14; }
+  .depart:nth-child(16) { --n: 15; }
+  .depart:nth-child(17) { --n: 16; }
+  .depart:nth-child(18) { --n: 17; }
+  .depart:nth-child(19) { --n: 18; }
+  .depart:nth-child(20) { --n: 19; }
+  .depart:nth-child(21) { --n: 20; }
+  .depart:nth-child(22) { --n: 21; }
+  .depart:nth-child(23) { --n: 22; }
+  .depart:nth-child(24) { --n: 23; }
+  .depart { --t0: calc(0.45s + var(--n, 0) * 0.12s); }
+  .depart__organe line {
+    stroke-dasharray: 64;
+    stroke-dashoffset: 64;
+    animation: trace 0.35s ease-out both;
+    animation-delay: var(--t0);
+  }
+  .depart__organe .plein {
+    animation: enclenche 0.5s steps(1) both, lueur 0.6s ease-out both;
+    animation-delay: calc(var(--t0) + 0.2s);
+  }
+  .depart--ouvert .depart__organe .plein { animation: none; }
+  .depart__fiche {
+    animation: fiche-in 0.45s cubic-bezier(.2,.7,.2,1) both;
+    animation-delay: calc(var(--t0) + 0.1s);
+  }
+  @keyframes trace { to { stroke-dashoffset: 0; } }
+  @keyframes enclenche { 0% { fill: transparent; } 40% { fill: var(--ambre); } }
+  @keyframes lueur { 0% { filter: drop-shadow(0 0 0 var(--ambre)); } 50% { filter: drop-shadow(0 0 8px var(--ambre)); } }
+  @keyframes fiche-in { from { opacity: 0; transform: translateX(-10px); } }
+
+  /* Au survol, le départ « conduit » : la ligne s'éclaire */
+  .depart__organe { transition: filter 0.25s; }
+  .depart:hover .depart__organe,
+  .depart:focus-within .depart__organe { filter: drop-shadow(0 0 6px var(--violet)); }
+  .depart--ouvert:hover .depart__organe { filter: none; }
 </style>

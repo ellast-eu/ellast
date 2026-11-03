@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { SITE } from '../site.config';
+import Reseau from '../components/Reseau.astro';
 
 interface Props {
   title?: string;
@@ -35,13 +36,14 @@ const canonical = new URL(path, Astro.site);
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="alternate" type="application/rss+xml" title="ellast — blog" href="/rss.xml" />
-    <meta name="theme-color" content="#150d20" />
+    <meta name="theme-color" content="#061617" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
   </head>
   <body class:list={{ 'body--bare': bare }}>
+    <Reseau />
     <a class="evitement sr-only" href="#contenu">Aller au contenu</a>
     <header class="entete">
       <a class="marque" href="/" aria-label="ellast, accueil">
@@ -91,6 +93,10 @@ const canonical = new URL(path, Astro.site);
     border-bottom: 1px solid var(--ligne);
     font-family: var(--mono);
     font-size: 0.85rem;
+    background: rgb(6 22 23 / 0.6);
+    backdrop-filter: blur(6px);
+    /* L'en-tête reste en place pendant les transitions de page */
+    view-transition-name: entete;
   }
   .marque {
     color: var(--encre);
@@ -100,9 +106,29 @@ const canonical = new URL(path, Astro.site);
   }
   .marque__invite { color: var(--violet); }
   nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
-  nav a { color: var(--brume); text-decoration: none; }
+  nav a {
+    position: relative;
+    color: var(--brume);
+    text-decoration: none;
+    padding-bottom: 0.25rem;
+    transition: color 0.2s;
+  }
+  /* Soulignement qui se « tire » comme un trait de schéma */
+  nav a::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: var(--violet);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s cubic-bezier(.2,.7,.2,1);
+  }
   nav a:hover { color: var(--encre); }
-  nav a[aria-current='page'] { color: var(--encre); box-shadow: 0 1px 0 var(--violet); }
+  nav a:hover::after, nav a[aria-current='page']::after { transform: scaleX(1); }
+  nav a[aria-current='page'] { color: var(--encre); }
+  .marque__invite { transition: color 0.2s; }
+  .marque:hover .marque__invite { color: var(--ambre); }
   main { flex: 1; display: flex; flex-direction: column; }
   .pied {
     display: flex;
