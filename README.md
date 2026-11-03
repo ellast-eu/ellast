@@ -52,3 +52,7 @@ que GitHub Pages ne permet pas (HSTS, `frame-ancestors`, `X-Content-Type-Options
 - Le terminal construit son affichage avec `textContent`, jamais `innerHTML` :
   une description de dépôt piégée ne peut pas injecter de HTML.
 - Polices auto-hébergées (pas de Google Fonts), donc aucun appel tiers.
+
+## Licence
+
+Code sous licence [MIT](LICENSE). Les polices gardent leur propre licence (SIL Open Font License 1.1), voir `LICENSE`.
