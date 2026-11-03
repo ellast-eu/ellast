@@ -1,0 +1,112 @@
+---
+// Un « départ » du schéma unifilaire : une ligne qui part du jeu de barres,
+// un organe de coupure (fermé = actif, ouvert = archivé), puis la fiche du dépôt.
+import type { Repo } from '../lib/github';
+import { formatDate } from '../lib/github';
+
+interface Props { repo: Repo }
+const { repo } = Astro.props;
+const ferme = !repo.archived;
+---
+
+<li class:list={['depart', { 'depart--vedette': repo.featured, 'depart--ouvert': !ferme }]}>
+  <svg class="depart__organe" viewBox="0 0 64 24" aria-hidden="true">
+    <line x1="0" y1="12" x2="22" y2="12" />
+    {ferme ? (
+      <>
+        <rect x="22" y="4" width="16" height="16" class="plein" />
+        <line x1="38" y1="12" x2="64" y2="12" />
+      </>
+    ) : (
+      <>
+        <circle cx="24" cy="12" r="2.2" class="plein" />
+        <line x1="24" y1="12" x2="40" y2="2" />
+        <circle cx="42" cy="12" r="2.2" class="plein" />
+        <line x1="42" y1="12" x2="64" y2="12" class="mort" />
+      </>
+    )}
+  </svg>
+
+  <div class="depart__fiche">
+    <h2 class="depart__nom">
+      <a href={repo.url} rel="noopener noreferrer">{repo.name}</a>
+    </h2>
+    {repo.description && <p class="depart__desc">{repo.description}</p>}
+    <p class="depart__meta">
+      <span>{ferme ? 'Actif' : 'Archivé'}</span>
+      {repo.language && <span>{repo.language}</span>}
+      {repo.stars > 0 && <span>★ {repo.stars}</span>}
+      <span>mis à jour le <time datetime={repo.updatedAt}>{formatDate(repo.updatedAt)}</time></span>
+      {repo.homepage && <a href={repo.homepage} rel="noopener noreferrer">Voir la démo</a>}
+    </p>
+    {repo.topics.length > 0 && (
+      <ul class="depart__sujets" aria-label="Sujets">
+        {repo.topics.map((t) => <li>{t}</li>)}
+      </ul>
+    )}
+  </div>
+</li>
+
+<style>
+  .depart {
+    position: relative;
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 1.1rem;
+    align-items: start;
+    padding: 1.1rem 0;
+  }
+  .depart__organe {
+    width: 64px;
+    height: 24px;
+    margin-top: 0.15rem;
+    stroke: var(--violet);
+    stroke-width: 2;
+    fill: none;
+    overflow: visible;
+  }
+  .depart__organe .plein { fill: var(--ambre); stroke: var(--ambre); }
+  .depart--ouvert .depart__organe { stroke: var(--brume); }
+  .depart--ouvert .depart__organe .plein { fill: var(--nuit); stroke: var(--brume); }
+  .depart__organe .mort { stroke-dasharray: 3 4; }
+
+  .depart__fiche { min-width: 0; }
+  .depart__nom {
+    font-size: 1.05rem;
+    margin: 0 0 0.3rem;
+    word-break: break-word;
+  }
+  .depart__nom a { color: var(--encre); text-decoration: none; }
+  .depart__nom a:hover { color: var(--violet); text-decoration: underline; }
+  .depart--vedette .depart__nom { font-size: 1.4rem; }
+  .depart--ouvert .depart__nom a { color: var(--brume); }
+
+  .depart__desc { margin: 0 0 0.45rem; max-width: 62ch; }
+  .depart__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.2rem;
+    margin: 0;
+    color: var(--brume);
+    font-size: 0.88rem;
+  }
+  .depart__meta > span:first-child { color: var(--ambre); }
+  .depart--ouvert .depart__meta > span:first-child { color: var(--brume); }
+
+  .depart__sujets {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+  .depart__sujets li {
+    color: var(--violet);
+    border: 1px solid var(--ligne);
+    border-radius: 999px;
+    padding: 0.05rem 0.6rem;
+  }
+</style>

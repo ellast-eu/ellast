@@ -1,0 +1,62 @@
+---
+import Base from '../../layouts/Base.astro';
+import Depart from '../../components/Depart.astro';
+import { getRepos } from '../../lib/github';
+import { SITE } from '../../site.config';
+
+const { repos, source } = await getRepos();
+const actifs = repos.filter((r) => !r.archived).length;
+---
+
+<Base title="Projets" description={`Les dépôts publics de ${SITE.githubUser} sur GitHub.`}>
+  <div class="page page--projets">
+    <h1>Projets</h1>
+    <p class="chapo">
+      Chaque départ est un dépôt public de <a href={SITE.links.github}>github.com/{SITE.githubUser}</a>.
+      Disjoncteur fermé, le projet vit. Sectionneur ouvert, il est archivé.
+    </p>
+    {source === 'sample' && (
+      <p class="avertissement">Données d'exemple affichées (ELLAST_SAMPLE_REPOS=1).</p>
+    )}
+
+    {repos.length > 0 ? (
+      <div class="schema">
+        <p class="schema__poste" aria-hidden="true">
+          <span>JdB 20 kV</span><span>{actifs}/{repos.length} sous tension</span>
+        </p>
+        <ul class="schema__departs">
+          {repos.map((r) => <Depart repo={r} />)}
+        </ul>
+      </div>
+    ) : (
+      <p class="vide">
+        La liste n'a pas pu être chargée lors de la dernière publication.
+        Tous les dépôts restent consultables sur <a href={SITE.links.github}>GitHub</a>.
+      </p>
+    )}
+  </div>
+</Base>
+
+<style>
+  .page--projets { max-width: calc(54rem + 2 * var(--gouttiere)); }
+  .avertissement { color: var(--ambre); font-size: 0.9rem; }
+
+  .schema { margin-top: 2.6rem; }
+  .schema__poste {
+    display: flex;
+    gap: 1.2rem;
+    margin: 0 0 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--brume);
+  }
+  .schema__poste span:first-child { color: var(--violet); }
+  /* Le jeu de barres : un trait vertical épais d'où partent tous les départs */
+  .schema__departs {
+    list-style: none;
+    margin: 0;
+    padding: 0.4rem 0 0.4rem 0;
+    border-left: 4px solid var(--violet);
+  }
+  .vide { margin-top: 2rem; color: var(--brume); }
+</style>

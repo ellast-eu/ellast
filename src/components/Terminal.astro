@@ -1,0 +1,490 @@
+---
+import { getCollection } from 'astro:content';
+import { getRepos } from '../lib/github';
+import { SITE } from '../site.config';
+
+const { repos } = await getRepos();
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+
+const data = {
+  user: SITE.githubUser,
+  author: SITE.author,
+  links: SITE.links,
+  repos: repos.map((r) => ({
+    name: r.name,
+    description: r.description,
+    url: r.url,
+    homepage: r.homepage,
+    language: r.language,
+    stars: r.stars,
+    archived: r.archived,
+    updatedAt: r.updatedAt,
+  })),
+  posts: posts.map((p) => ({
+    slug: p.id,
+    title: p.data.title,
+    date: p.data.date.toISOString().slice(0, 10),
+    description: p.data.description,
+  })),
+};
+// Échappe "<" pour qu'aucun contenu ne puisse fermer la balise <script>
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
+---
+
+<section class="terminal" aria-label="Terminal interactif">
+  <div class="terminal__barre">
+    <span class="terminal__titre">stella@ellast: ~</span>
+    <span class="terminal__tension" aria-hidden="true">
+      <span class="terminal__voyant"></span>20 kV
+    </span>
+  </div>
+  <div class="terminal__ecran" id="term-ecran">
+    <div class="terminal__journal" id="term-journal" role="log" aria-live="polite"></div>
+    <form class="terminal__ligne" id="term-form" autocomplete="off">
+      <label for="term-saisie" class="terminal__invite">
+        <span class="i-user">stella@ellast</span><span class="i-sep">:</span><span class="i-dir" id="term-dir">~</span><span class="i-dollar">$</span>
+        <span class="sr-only">Commande</span>
+      </label>
+      <input
+        id="term-saisie"
+        class="terminal__saisie"
+        type="text"
+        spellcheck="false"
+        autocapitalize="off"
+        enterkeyhint="send"
+        aria-describedby="term-aide"
+      />
+    </form>
+  </div>
+  <p class="terminal__aide" id="term-aide">
+    Tape <kbd>help</kbd> pour la liste des commandes. <kbd>Tab</kbd> complète, <kbd>↑</kbd> rappelle l'historique.
+  </p>
+</section>
+
+<script type="application/json" id="term-data" is:inline set:html={json} />
+
+<script>
+  type Repo = {
+    name: string; description: string; url: string; homepage: string | null;
+    language: string | null; stars: number; archived: boolean; updatedAt: string;
+  };
+  type Post = { slug: string; title: string; date: string; description: string };
+  type Data = {
+    user: string; author: string;
+    links: { github: string; email: string; linkedin: string };
+    repos: Repo[]; posts: Post[];
+  };
+
+  const data: Data = JSON.parse(document.getElementById('term-data')!.textContent || '{}');
+  const journal = document.getElementById('term-journal')!;
+  const ecran = document.getElementById('term-ecran')!;
+  const form = document.getElementById('term-form') as HTMLFormElement;
+  const saisie = document.getElementById('term-saisie') as HTMLInputElement;
+  const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // --- Rendu : uniquement via textContent / createElement, jamais innerHTML ---
+  type Seg = string | { t: string; c?: string; href?: string };
+  const ligne = (segs: Seg[] | string, cls = '') => {
+    const el = document.createElement('div');
+    el.className = 'l ' + cls;
+    for (const s of typeof segs === 'string' ? [segs] : segs) {
+      if (typeof s === 'string') { el.append(s); continue; }
+      const n = document.createElement(s.href ? 'a' : 'span');
+      if (s.href) {
+        (n as HTMLAnchorElement).href = s.href;
+        if (/^https?:/.test(s.href)) { (n as HTMLAnchorElement).rel = 'noopener noreferrer'; }
+      }
+      if (s.c) n.className = s.c;
+      n.textContent = s.t;
+      el.append(n);
+    }
+    journal.append(el);
+    return el;
+  };
+  const vide = () => ligne(' ');
+  const defile = () => { ecran.scrollTop = ecran.scrollHeight; };
+
+  const findRepo = (q: string) =>
+    data.repos.find((r) => r.name.toLowerCase() === q.toLowerCase());
+  const findPost = (q: string) =>
+    data.posts.find((p) => p.slug === q || p.slug.endsWith('/' + q));
+
+  const vers = (href: string) => {
+    ligne([{ t: '→ ', c: 'c-violet' }, 'ouverture de ', { t: href, c: 'c-ambre' }]);
+    setTimeout(() => { window.location.href = href; }, reduit ? 0 : 350);
+  };
+
+  // --- Système de fichiers fictif, pour ls / cd / cat ---
+  const dossiers: Record<string, () => string[]> = {
+    '~': () => ['projets/', 'blog/', 'a-propos.txt', 'contact.txt'],
+    projets: () => data.repos.map((r) => r.name),
+    blog: () => data.posts.map((p) => p.slug + '.md'),
+  };
+  let cwd = '~';
+  const dirEl = document.getElementById('term-dir')!;
+
+  const aPropos = () => {
+    ligne([{ t: data.author, c: 'c-encre fort' }]);
+    ligne('Référente sécurité sur les réseaux HTA/BT chez Enedis.');
+    ligne('En reconversion vers la cybersécurité : alternance Administratrice');
+    ligne("d'infrastructures sécurisées à partir de janvier 2027.");
+    ligne('Consultante indépendante (SC2) : impression 3D et conseil cyber.');
+    vide();
+    ligne(['Plus de détails : ', { t: '/a-propos/', href: '/a-propos/' }]);
+  };
+
+  const contact = () => {
+    ligne(['github    ', { t: data.links.github, href: data.links.github }]);
+    if (data.links.email) ligne(['courriel  ', { t: data.links.email, href: 'mailto:' + data.links.email }]);
+    if (data.links.linkedin) ligne(['linkedin  ', { t: data.links.linkedin, href: data.links.linkedin }]);
+  };
+
+  const listeProjets = () => {
+    if (!data.repos.length) {
+      ligne('Aucun dépôt chargé. La liste complète est sur GitHub :', 'c-brume');
+      ligne([{ t: data.links.github, href: data.links.github }]);
+      return;
+    }
+    const w = Math.max(...data.repos.map((r) => r.name.length)) + 2;
+    for (const r of data.repos) {
+      ligne([
+        { t: r.archived ? '○ ' : '● ', c: r.archived ? 'c-brume' : 'c-ambre' },
+        { t: r.name.padEnd(w), c: 'c-violet' },
+        { t: (r.language ?? '—').padEnd(12), c: 'c-brume' },
+        r.description ? r.description.slice(0, 60) + (r.description.length > 60 ? '…' : '') : '',
+      ]);
+    }
+    vide();
+    ligne([{ t: '● ', c: 'c-ambre' }, { t: 'sous tension   ', c: 'c-brume' }, { t: '○ archivé   ', c: 'c-brume' }, 'cat <projet> pour le détail']);
+  };
+
+  const ficheProjet = (r: Repo) => {
+    ligne([{ t: r.name, c: 'c-violet fort' }, r.archived ? '  (archivé)' : '']);
+    if (r.description) ligne(r.description);
+    ligne([
+      { t: 'langage ', c: 'c-brume' }, r.language ?? '—',
+      { t: '   ★ ', c: 'c-ambre' }, String(r.stars),
+      { t: '   maj ', c: 'c-brume' }, r.updatedAt.slice(0, 10),
+    ]);
+    ligne(['dépôt   ', { t: r.url, href: r.url }]);
+    if (r.homepage) ligne(['démo    ', { t: r.homepage, href: r.homepage }]);
+  };
+
+  const listeBlog = () => {
+    if (!data.posts.length) { ligne('Aucun article publié pour le moment.', 'c-brume'); return; }
+    for (const p of data.posts) {
+      ligne([{ t: p.date + '  ', c: 'c-brume' }, { t: p.title, href: `/blog/${p.slug}/` }]);
+    }
+  };
+
+  const neofetch = () => {
+    const art = [
+      '    ╷   ',
+      '  ──┼── ',
+      '   ╱ ╲  ',
+      '  ╱ ╳ ╲ ',
+      ' ╱ ╱ ╲ ╲',
+      '╱ ╱   ╲ ╲',
+    ];
+    const info: Seg[][] = [
+      [{ t: 'stella', c: 'c-violet fort' }, '@', { t: 'ellast', c: 'c-violet fort' }],
+      ['───────────────'],
+      [{ t: 'OS       ', c: 'c-ambre' }, 'Qubes, par compartiments'],
+      [{ t: 'Réseau   ', c: 'c-ambre' }, 'HTA 20 kV / BT 400 V'],
+      [{ t: 'Shell    ', c: 'c-ambre' }, 'ellsh 0.1'],
+      [{ t: 'Dépôts   ', c: 'c-ambre' }, String(data.repos.length)],
+      [{ t: 'Articles ', c: 'c-ambre' }, String(data.posts.length)],
+    ];
+    for (let i = 0; i < Math.max(art.length, info.length); i++) {
+      ligne([{ t: (art[i] ?? '').padEnd(12), c: 'c-violet' }, ...(info[i] ?? [])]);
+    }
+  };
+
+  const historique: string[] = [];
+  let curseurHist = 0;
+
+  const commandes: Record<string, { aide: string; run: (args: string[]) => void }> = {
+    help: {
+      aide: 'cette aide',
+      run: () => {
+        for (const [nom, c] of Object.entries(commandes)) {
+          if (c.aide) ligne([{ t: nom.padEnd(16), c: 'c-violet' }, { t: c.aide, c: 'c-brume' }]);
+        }
+      },
+    },
+    whoami: { aide: 'qui tient ce poste', run: aPropos },
+    ls: {
+      aide: 'lister le dossier courant ou [projets|blog]',
+      run: ([d]) => {
+        const cible = (d ?? cwd).replace(/\/$/, '').replace(/^~\//, '');
+        const f = dossiers[cible];
+        if (!f) { ligne(`ls: ${d} : aucun dossier de ce nom`, 'c-rouge'); return; }
+        const items = f();
+        if (cible === 'projets') { listeProjets(); return; }
+        if (cible === 'blog') { listeBlog(); return; }
+        ligne(items.map((n) => ({ t: n + '   ', c: n.endsWith('/') ? 'c-violet' : '' })));
+      },
+    },
+    cd: {
+      aide: 'changer de dossier (projets, blog, ~)',
+      run: ([d = '~']) => {
+        const cible = d.replace(/\/$/, '').replace(/^~\//, '');
+        if (cible === '..' || cible === '~' || cible === '/') { cwd = '~'; }
+        else if (dossiers[cible] && cible !== '~') { cwd = cible; }
+        else { ligne(`cd: ${d} : aucun dossier de ce nom`, 'c-rouge'); return; }
+        dirEl.textContent = cwd === '~' ? '~' : '~/' + cwd;
+      },
+    },
+    cat: {
+      aide: 'afficher un fichier ou la fiche d\'un projet',
+      run: ([f]) => {
+        if (!f) { ligne('cat: quel fichier ?', 'c-rouge'); return; }
+        const n = f.replace(/^projets\//, '').replace(/^blog\//, '');
+        if (n === 'a-propos.txt') return aPropos();
+        if (n === 'contact.txt') return contact();
+        const r = findRepo(n);
+        if (r) return ficheProjet(r);
+        const p = findPost(n.replace(/\.md$/, ''));
+        if (p) {
+          ligne([{ t: p.title, c: 'c-violet fort' }]);
+          ligne([{ t: p.date, c: 'c-brume' }]);
+          ligne(p.description);
+          ligne(['lire : ', { t: `/blog/${p.slug}/`, href: `/blog/${p.slug}/` }]);
+          return;
+        }
+        ligne(`cat: ${f} : fichier introuvable`, 'c-rouge');
+      },
+    },
+    projets: { aide: 'les dépôts GitHub', run: listeProjets },
+    blog: { aide: 'les derniers articles', run: listeBlog },
+    open: {
+      aide: 'ouvrir un projet, un article, ou github',
+      run: ([q]) => {
+        if (!q) { ligne('open: quoi ?  open <projet> | open <article> | open github', 'c-rouge'); return; }
+        if (q === 'github') return vers(data.links.github);
+        const r = findRepo(q);
+        if (r) return vers(r.url);
+        const p = findPost(q.replace(/\.md$/, ''));
+        if (p) return vers(`/blog/${p.slug}/`);
+        ligne(`open: ${q} : rien de ce nom`, 'c-rouge');
+      },
+    },
+    contact: { aide: 'me joindre', run: contact },
+    neofetch: { aide: 'fiche système', run: neofetch },
+    history: {
+      aide: 'commandes déjà tapées',
+      run: () => historique.forEach((h, i) => ligne([{ t: String(i + 1).padStart(4) + '  ', c: 'c-brume' }, h])),
+    },
+    date: { aide: '', run: () => ligne(new Date().toLocaleString('fr-FR')) },
+    echo: { aide: '', run: (a) => ligne(a.join(' ')) },
+    pwd: { aide: '', run: () => ligne(cwd === '~' ? '/home/stella' : '/home/stella/' + cwd) },
+    sudo: {
+      aide: '',
+      run: () => ligne("stella n'est pas dans le fichier sudoers. Cet incident sera signalé.", 'c-rouge'),
+    },
+    rm: {
+      aide: '',
+      run: () => ligne("rm : consignation refusée. On ne travaille pas sur un ouvrage sans l'avoir mis hors tension.", 'c-ambre'),
+    },
+    exit: {
+      aide: 'quitter le terminal pour la navigation classique',
+      run: () => {
+        ligne('Session fermée. Navigation classique :');
+        ligne([
+          { t: 'Projets', href: '/projets/' }, '   ',
+          { t: 'Blog', href: '/blog/' }, '   ',
+          { t: 'À propos', href: '/a-propos/' },
+        ]);
+      },
+    },
+    clear: { aide: 'effacer l\'écran', run: () => { journal.replaceChildren(); } },
+  };
+  commandes.ll = commandes.ls;
+  commandes.about = commandes.whoami;
+
+  const executer = (brut: string) => {
+    const texte = brut.trim();
+    ligne([
+      { t: 'stella@ellast', c: 'i-user' }, { t: ':', c: 'i-sep' },
+      { t: cwd === '~' ? '~' : '~/' + cwd, c: 'i-dir' }, { t: '$ ', c: 'i-dollar' }, texte,
+    ], 'l--cmd');
+    if (!texte) return;
+    historique.push(texte);
+    curseurHist = historique.length;
+    const [nom, ...args] = texte.split(/\s+/);
+    const c = commandes[nom.toLowerCase()];
+    if (c) c.run(args);
+    else ligne([`${nom} : commande introuvable. Essaie `, { t: 'help', c: 'c-violet' }, '.'], 'c-brume');
+  };
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    executer(saisie.value);
+    saisie.value = '';
+    defile();
+  });
+
+  // Historique et complétion
+  saisie.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (curseurHist > 0) saisie.value = historique[--curseurHist];
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (curseurHist < historique.length - 1) saisie.value = historique[++curseurHist];
+      else { curseurHist = historique.length; saisie.value = ''; }
+    } else if (e.key === 'Tab') {
+      const v = saisie.value;
+      const parts = v.split(/\s+/);
+      const avecArg = parts.length > 1;
+      const pool = avecArg
+        ? [...data.repos.map((r) => r.name), ...data.posts.map((p) => p.slug), 'projets', 'blog', 'github', 'a-propos.txt', 'contact.txt']
+        : Object.keys(commandes);
+      const prefixe = parts[parts.length - 1].toLowerCase();
+      if (!prefixe && !avecArg) return; // laisse Tab sortir du champ si rien n'est tapé
+      e.preventDefault();
+      const candidats = pool.filter((p) => p.toLowerCase().startsWith(prefixe));
+      if (candidats.length === 1) {
+        parts[parts.length - 1] = candidats[0];
+        saisie.value = parts.join(' ') + ' ';
+      } else if (candidats.length > 1) {
+        ligne(candidats.join('   '), 'c-brume');
+        defile();
+      }
+    } else if (e.key === 'l' && e.ctrlKey) {
+      e.preventDefault();
+      journal.replaceChildren();
+    }
+  });
+
+  // Un clic dans l'écran redonne le focus à la saisie (sauf sélection de texte ou lien)
+  ecran.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) return;
+    if (window.getSelection()?.toString()) return;
+    saisie.focus({ preventScroll: true });
+  });
+
+  // --- Mise sous tension ---
+  const sequence: [string, string][] = [
+    ['ok', 'Vérification d\'absence de tension'],
+    ['ok', 'Levée de consignation du départ D-01'],
+    ['ok', `Fermeture du disjoncteur, ${data.repos.length} départ(s) projets`],
+    ['ok', `Montage de /blog, ${data.posts.length} article(s)`],
+    ['ok', 'Ouverture du shell ellsh'],
+  ];
+
+  const accueil = () => {
+    vide();
+    ligne([{ t: 'Bienvenue sur ellast.', c: 'c-encre fort' }, " Le poste de Stella : réseaux électriques et cybersécurité."]);
+    ligne(['Commence par ', { t: 'whoami', c: 'c-violet' }, ', ', { t: 'projets', c: 'c-violet' }, ' ou ', { t: 'help', c: 'c-violet' }, '.']);
+    vide();
+  };
+
+  const dejaVu = (() => { try { return sessionStorage.getItem('ellast-boot') === '1'; } catch { return false; } })();
+
+  const demarrer = async () => {
+    if (reduit || dejaVu) {
+      for (const [, t] of sequence) ligne([{ t: '[  OK  ] ', c: 'c-ambre' }, t]);
+    } else {
+      let interrompu = false;
+      const stop = () => { interrompu = true; };
+      window.addEventListener('keydown', stop, { once: true });
+      for (const [, t] of sequence) {
+        ligne([{ t: '[  OK  ] ', c: 'c-ambre' }, t], 'l--boot');
+        if (!interrompu) await new Promise((r) => setTimeout(r, 260));
+      }
+      window.removeEventListener('keydown', stop);
+      try { sessionStorage.setItem('ellast-boot', '1'); } catch { /* stockage indisponible */ }
+    }
+    accueil();
+    defile();
+    // Pas de focus automatique sur mobile : le clavier virtuel masquerait l'écran
+    if (window.matchMedia('(pointer: fine)').matches) saisie.focus({ preventScroll: true });
+  };
+
+  demarrer();
+</script>
+
+<style is:global>
+  .terminal {
+    --t-pad: clamp(14px, 2.5vw, 26px);
+    position: relative; /* contient le libellé sr-only de la saisie */
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    border: 1px solid var(--ligne);
+    border-radius: 10px;
+    background:
+      radial-gradient(120% 80% at 80% 0%, #2a1a45 0%, transparent 60%),
+      var(--nuit-2);
+    overflow: hidden;
+    font-family: var(--mono);
+    font-size: clamp(0.74rem, 0.68rem + 0.3vw, 0.86rem);
+    line-height: 1.65;
+  }
+  .terminal__barre {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem var(--t-pad);
+    border-bottom: 1px solid var(--ligne);
+    color: var(--brume);
+    font-size: 0.78em;
+  }
+  .terminal__tension { display: inline-flex; align-items: center; gap: 0.5em; color: var(--ambre); }
+  .terminal__voyant {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ambre);
+    box-shadow: 0 0 8px var(--ambre);
+  }
+  .terminal__ecran {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--t-pad);
+    cursor: text;
+    scrollbar-color: var(--ligne) transparent;
+  }
+  .terminal__journal .l { white-space: pre-wrap; word-break: break-word; min-height: 1.65em; }
+  .terminal__journal a { color: var(--violet); }
+  .terminal__journal a:hover { color: var(--encre); }
+  .l--cmd { margin-top: 0.35em; }
+  .l--boot { animation: allume 0.18s steps(2) both; }
+  @keyframes allume { from { opacity: 0; } to { opacity: 1; } }
+
+  .terminal__ligne { display: flex; align-items: baseline; gap: 0.6ch; margin-top: 0.35em; }
+  .terminal__invite { white-space: nowrap; }
+  .i-user { color: var(--violet); font-weight: 600; }
+  .i-sep { color: var(--brume); }
+  .i-dir { color: var(--encre); }
+  .i-dollar { color: var(--ambre); margin-left: 0.15ch; }
+  .terminal__saisie {
+    flex: 1;
+    min-width: 4ch;
+    background: transparent;
+    border: 0;
+    color: var(--encre);
+    font: inherit;
+    caret-color: var(--ambre);
+    padding: 0;
+  }
+  .terminal__saisie:focus { outline: none; }
+  .terminal__ligne:focus-within .i-dollar { text-shadow: 0 0 10px var(--ambre); }
+  .terminal__aide {
+    margin: 0;
+    padding: 0.6rem var(--t-pad);
+    border-top: 1px solid var(--ligne);
+    color: var(--brume);
+    font-size: 0.78em;
+  }
+  .terminal__aide kbd { color: var(--encre); }
+
+  .c-violet { color: var(--violet); }
+  .c-ambre { color: var(--ambre); }
+  .c-brume { color: var(--brume); }
+  .c-rouge { color: var(--rouge); }
+  .c-encre { color: var(--encre); }
+  .fort { font-weight: 600; }
+</style>

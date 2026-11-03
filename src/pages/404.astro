@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page introuvable">
+  <div class="page">
+    <p class="erreur" aria-hidden="true">bash: {Astro.url.pathname}: No such file or directory</p>
+    <h1>Cette page n'existe pas</h1>
+    <p>Le lien est peut-être ancien. Repars de l'<a href="/">accueil</a> ou va voir les <a href="/projets/">projets</a>.</p>
+  </div>
+</Base>
+
+<style>
+  .erreur { font-family: var(--mono); font-size: 0.85rem; color: var(--rouge); word-break: break-all; }
+</style>

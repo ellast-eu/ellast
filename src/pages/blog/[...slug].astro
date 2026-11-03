@@ -1,0 +1,43 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { formatDate } from '../../lib/github';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<Base title={post.data.title} description={post.data.description}>
+  <article class="page article">
+    <p class="article__retour"><a href="/blog/">Tous les articles</a></p>
+    <h1>{post.data.title}</h1>
+    <p class="article__meta">
+      <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+      {post.data.tags.length > 0 && <span>{post.data.tags.join(', ')}</span>}
+    </p>
+    <div class="article__corps">
+      <Content />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .article__retour { font-size: 0.9rem; margin: 0 0 2rem; }
+  .article__meta {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    color: var(--brume); font-size: 0.9rem; margin: -0.6rem 0 2.4rem;
+  }
+  .article__corps :global(img) { max-width: 100%; height: auto; }
+  .article__corps :global(blockquote) {
+    margin: 1.5rem 0;
+    padding: 0.2rem 0 0.2rem 1.2rem;
+    border-left: 3px solid var(--ambre);
+    color: var(--brume);
+  }
+  .article__corps :global(h2::before) { content: '## '; color: var(--violet); }
+</style>

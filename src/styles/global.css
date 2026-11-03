@@ -1,0 +1,116 @@
+@import '@fontsource-variable/martian-mono';
+@import '@fontsource-variable/instrument-sans';
+
+/*
+  Palette « poste de nuit » : violet de veille sur fond aubergine,
+  ambre des pancartes « danger haute tension » pour ce qui est sous tension.
+*/
+:root {
+  --nuit: #150d20;
+  --nuit-2: #1e142d;
+  --ligne: #3a2b52;
+  --encre: #ece6f5;
+  --brume: #a397b8;
+  --violet: #b38cff;
+  --violet-fort: #8f5cff;
+  --ambre: #ffb547;
+  --rouge: #ff6b8a;
+
+  --mono: 'Martian Mono Variable', ui-monospace, monospace;
+  --sans: 'Instrument Sans Variable', system-ui, sans-serif;
+
+  --mesure: 68ch;
+  --gouttiere: clamp(16px, 4vw, 40px);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--nuit);
+  color: var(--encre);
+  font: 400 1.0625rem/1.6 var(--sans);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--violet); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+a:hover { color: var(--encre); }
+
+:focus-visible {
+  outline: 2px solid var(--ambre);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+::selection { background: var(--violet-fort); color: var(--nuit); }
+
+h1, h2, h3 {
+  font-family: var(--mono);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+h1 { font-size: clamp(1.9rem, 1.2rem + 3vw, 3.2rem); margin: 0 0 0.6em; }
+h2 { font-size: 1.45rem; margin: 2.2em 0 0.6em; }
+h3 { font-size: 1.15rem; margin: 1.8em 0 0.5em; }
+
+code, kbd, pre { font-family: var(--mono); font-size: 0.86em; }
+:not(pre) > code {
+  background: var(--nuit-2);
+  border: 1px solid var(--ligne);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+pre {
+  padding: 1rem 1.2rem;
+  border-radius: 6px;
+  border: 1px solid var(--ligne);
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+/* Accueil : exactement un écran de haut, le terminal prend le reste */
+.body--bare { height: 100dvh; min-height: 34rem; }
+.body--bare main { min-height: 0; }
+
+.page {
+  width: 100%;
+  max-width: calc(var(--mesure) + 2 * var(--gouttiere));
+  margin: 0 auto;
+  padding: 3rem var(--gouttiere) 5rem;
+  flex: 1;
+}
+.page--large { max-width: calc(80rem + 2 * var(--gouttiere)); }
+
+.chapo { color: var(--brume); font-size: 1.15rem; max-width: 56ch; margin-top: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Tableaux (articles) */
+table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+th { color: var(--violet); font-weight: 600; }
+
+/* Coloration syntaxique Prism, thème maison */
+pre[class*='language-'] { background: var(--nuit-2); color: var(--encre); }
+.token.comment, .token.prolog { color: #7d6f95; font-style: italic; }
+.token.string, .token.attr-value { color: var(--ambre); }
+.token.keyword, .token.builtin, .token.function { color: var(--violet); }
+.token.number, .token.boolean, .token.constant { color: #ff9ec2; }
+.token.operator, .token.punctuation { color: var(--brume); }
+.token.variable, .token.parameter { color: #d9c7ff; }

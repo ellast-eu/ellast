@@ -1,0 +1,120 @@
+---
+import '../styles/global.css';
+import { SITE } from '../site.config';
+
+interface Props {
+  title?: string;
+  description?: string;
+  bare?: boolean; // page d'accueil plein écran, sans pied de page
+}
+
+const { title, description = SITE.description, bare = false } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} — ${SITE.author}`;
+const path = Astro.url.pathname;
+const nav = [
+  { href: '/projets/', label: 'Projets' },
+  { href: '/blog/', label: 'Blog' },
+  { href: '/a-propos/', label: 'À propos' },
+];
+const canonical = new URL(path, Astro.site);
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- GitHub Pages ne permet pas d'en-têtes HTTP : la CSP passe par cette balise -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title="ellast — blog" href="/rss.xml" />
+    <meta name="theme-color" content="#150d20" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+  </head>
+  <body class:list={{ 'body--bare': bare }}>
+    <a class="evitement sr-only" href="#contenu">Aller au contenu</a>
+    <header class="entete">
+      <a class="marque" href="/" aria-label="ellast, accueil">
+        <span class="marque__invite" aria-hidden="true">~/</span>ellast
+      </a>
+      <nav aria-label="Principale">
+        <ul>
+          {nav.map((l) => (
+            <li>
+              <a href={l.href} aria-current={path.startsWith(l.href) ? 'page' : undefined}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </header>
+
+    <main id="contenu">
+      <slot />
+    </main>
+
+    {!bare && (
+      <footer class="pied">
+        <span>© {new Date().getFullYear()} {SITE.author}</span>
+        <ul class="pied__liens">
+          <li><a href={SITE.links.github}>GitHub</a></li>
+          {SITE.links.email && <li><a href={`mailto:${SITE.links.email}`}>Courriel</a></li>}
+          <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+      </footer>
+    )}
+  </body>
+</html>
+
+<style>
+  .evitement:focus {
+    position: fixed; top: 0.5rem; left: 0.5rem; width: auto; height: auto;
+    clip: auto; padding: 0.5rem 0.8rem; background: var(--ambre); color: var(--nuit);
+    z-index: 10; margin: 0;
+  }
+  .entete {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1.1rem var(--gouttiere);
+    border-bottom: 1px solid var(--ligne);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+  .marque {
+    color: var(--encre);
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .marque__invite { color: var(--violet); }
+  nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  nav a { color: var(--brume); text-decoration: none; }
+  nav a:hover { color: var(--encre); }
+  nav a[aria-current='page'] { color: var(--encre); box-shadow: 0 1px 0 var(--violet); }
+  main { flex: 1; display: flex; flex-direction: column; }
+  .pied {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1.4rem var(--gouttiere);
+    border-top: 1px solid var(--ligne);
+    color: var(--brume);
+    font-size: 0.85rem;
+  }
+  .pied__liens { list-style: none; display: flex; gap: 1.2rem; margin: 0; padding: 0; }
+  .pied a { color: var(--brume); }
+  .pied a:hover { color: var(--encre); }
+</style>

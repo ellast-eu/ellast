@@ -1,0 +1,44 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../site.config';
+---
+
+<Base title="À propos" description="Parcours de Stella Caltagirone, des réseaux électriques à la cybersécurité.">
+  <div class="page">
+    <h1>À propos</h1>
+    <p class="chapo">
+      Je m'appelle Stella Caltagirone. Je viens des réseaux électriques et je construis ma place en cybersécurité.
+    </p>
+
+    <h2>Aujourd'hui</h2>
+    <p>
+      Chez Enedis, je suis référente sécurité sur les infrastructures HTA/BT. Mon métier consiste à
+      faire en sorte que personne ne soit exposé au danger électrique : procédures, analyses de risque,
+      conduite de projets sur le réseau.
+    </p>
+
+    <h2>Demain</h2>
+    <p>
+      À partir de janvier 2027, je suis en alternance pour le titre d'Administratrice d'infrastructures
+      sécurisées. En parallèle, je pratique sur des plateformes de CTF et je documente ici ce que j'apprends.
+    </p>
+
+    <h2>À côté</h2>
+    <p>
+      Je dirige une micro-entreprise, SC2, qui propose de la conception pour l'impression 3D et du
+      conseil en cybersécurité.
+    </p>
+
+    <h2>Me joindre</h2>
+    <ul class="liens">
+      <li><a href={SITE.links.github}>GitHub</a></li>
+      {SITE.links.email && <li><a href={`mailto:${SITE.links.email}`}>{SITE.links.email}</a></li>}
+      {SITE.links.linkedin && <li><a href={SITE.links.linkedin}>LinkedIn</a></li>}
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .liens { padding-left: 1.2rem; }
+  .liens li::marker { content: '› '; color: var(--violet); }
+</style>

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "exemple-terminal",
+    "description": "Données d'exemple : ce dépôt n'existe pas. En production, la liste vient de l'API GitHub.",
+    "html_url": "https://github.com/Numidara",
+    "homepage": null,
+    "language": "TypeScript",
+    "stargazers_count": 4,
+    "topics": ["exemple"],
+    "archived": false,
+    "fork": false,
+    "pushed_at": "2026-10-30T10:00:00Z"
+  },
+  {
+    "name": "exemple-ctf-writeups",
+    "description": "Données d'exemple : notes de CTF et scripts d'exploitation.",
+    "html_url": "https://github.com/Numidara",
+    "homepage": null,
+    "language": "Python",
+    "stargazers_count": 1,
+    "topics": ["ctf", "exemple"],
+    "archived": false,
+    "fork": false,
+    "pushed_at": "2026-10-12T10:00:00Z"
+  },
+  {
+    "name": "exemple-archive",
+    "description": "Données d'exemple : un dépôt archivé, affiché disjoncteur ouvert.",
+    "html_url": "https://github.com/Numidara",
+    "homepage": null,
+    "language": "Shell",
+    "stargazers_count": 0,
+    "topics": [],
+    "archived": true,
+    "fork": false,
+    "pushed_at": "2025-03-02T10:00:00Z"
+  }
+]
