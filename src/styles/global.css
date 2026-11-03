@@ -1,6 +1,15 @@
 @import '@fontsource-variable/martian-mono';
 @import '@fontsource-variable/instrument-sans';
 
+/* Audex, par GGBotNet, sous licence SIL Open Font License 1.1 (voir src/fonts/LICENCE-Audex.txt) */
+@font-face {
+  font-family: 'Audex';
+  src: url('../fonts/Audex-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
   Palette « poste de nuit » : un fond vert pétrole, complémentaire du violet
   qui reste réservé au terminal et aux liens ; l'ambre des pancartes
@@ -25,6 +34,7 @@
   --t-brume: #ad9dcc;
 
   --mono: 'Martian Mono Variable', ui-monospace, monospace;
+  --enseigne: 'Audex', 'Martian Mono Variable', ui-monospace, monospace; /* en-tête du site */
   --sans: 'Instrument Sans Variable', system-ui, sans-serif;
 
   --mesure: 68ch;

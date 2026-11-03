@@ -1,0 +1,10 @@
+Audex
+Copyright (c) 2024 GGBotNet — https://ggbot.net
+
+Cette police est distribuée sous la SIL Open Font License, version 1.1.
+Texte complet et FAQ : https://openfontlicense.org/ (anciennement https://scripts.sil.org/OFL)
+
+En résumé : utilisation libre, y compris commerciale et intégration sur un site web.
+La police ne peut pas être vendue seule, et cette mention de licence doit l'accompagner.
+Le fichier Audex-Regular.woff2 est une conversion au format WOFF2 de Audex-Regular.ttf,
+sans modification des glyphes.
