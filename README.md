@@ -28,11 +28,11 @@ Pour un projet, ajouter des *topics* sur GitHub les fait apparaître sous forme 
 
 ## Publier sur GitHub Pages
 
-1. Crée un dépôt (par ex. `Numidara/ellast`) et pousse ce dossier sur la branche `main`.
+1. Crée un dépôt (par ex. `ellast-eu/ellast`) et pousse ce dossier sur la branche `main`.
 2. Dans le dépôt : **Settings → Pages → Source : GitHub Actions**.
 3. Le workflow `.github/workflows/deploy.yml` construit et publie à chaque push, et chaque nuit (pour rafraîchir la liste des dépôts).
 4. DNS chez OVH, zone `ellast.eu` :
-   - `www` → enregistrement **CNAME** vers `numidara.github.io.`
+   - `www` → enregistrement **CNAME** vers `ellast-eu.github.io.`
    - domaine nu `ellast.eu` → quatre enregistrements **A** : `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
 5. Dans **Settings → Pages**, saisis `www.ellast.eu` comme domaine personnalisé, attends le certificat, puis coche **Enforce HTTPS**.
    Pense à vérifier le domaine dans les paramètres de ton compte GitHub (*Pages → Verified domains*) pour empêcher un tiers de le revendiquer.

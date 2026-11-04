@@ -5,10 +5,10 @@ export const SITE = {
   author: 'Stella Caltagirone',
   description:
     'Réseaux électriques HTA/BT le jour, cybersécurité le reste du temps. Projets, notes et write-ups.',
-  githubUser: 'Numidara',
+  githubUser: 'ellast-eu',
   // Ajoute ce que tu veux exposer publiquement (laisse vide pour masquer)
   links: {
-    github: 'https://github.com/Numidara',
+    github: 'https://github.com/ellast-eu',
     email: '', // ex. 'contact@ellast.eu'
     linkedin: '',
   },
@@ -24,7 +24,7 @@ export const FEATURED: { repo: string; pitch?: string }[] = [
 ];
 
 /** Dépôts à ne jamais afficher (forks d'exercice, dépôts de config…). */
-export const HIDDEN: string[] = ['Numidara'];
+export const HIDDEN: string[] = ['ellast-eu'];
 
 /** Afficher les forks ? */
 export const SHOW_FORKS = false;

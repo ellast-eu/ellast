@@ -2,7 +2,7 @@
   {
     "name": "exemple-terminal",
     "description": "Données d'exemple : ce dépôt n'existe pas. En production, la liste vient de l'API GitHub.",
-    "html_url": "https://github.com/Numidara",
+    "html_url": "https://github.com/ellast-eu",
     "homepage": null,
     "language": "TypeScript",
     "stargazers_count": 4,
@@ -14,7 +14,7 @@
   {
     "name": "exemple-ctf-writeups",
     "description": "Données d'exemple : notes de CTF et scripts d'exploitation.",
-    "html_url": "https://github.com/Numidara",
+    "html_url": "https://github.com/ellast-eu",
     "homepage": null,
     "language": "Python",
     "stargazers_count": 1,
@@ -26,7 +26,7 @@
   {
     "name": "exemple-archive",
     "description": "Données d'exemple : un dépôt archivé, affiché disjoncteur ouvert.",
-    "html_url": "https://github.com/Numidara",
+    "html_url": "https://github.com/ellast-eu",
     "homepage": null,
     "language": "Shell",
     "stargazers_count": 0,
